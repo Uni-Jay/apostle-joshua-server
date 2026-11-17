@@ -17,6 +17,7 @@ export type Action =
   | { type: 'prayer_form' }
   | { type: 'contact_form'; subject: string }
   | { type: 'whatsapp' }
+  | { type: 'handoff' }
   | { type: 'call' };
 
 export interface Reply { text: string; chips?: string[]; action?: Action; source: 'safety' | 'rule' | 'faq' | 'ai' | 'fallback'; urgent?: boolean }
@@ -78,7 +79,7 @@ function rules(t: string, c: Ctx): Reply | null {
     return R(`Hello, and welcome to Apostle Joshua Outreach! 🙌 How can I help you today?`, { chips: MAIN_CHIPS });
 
   if (has(t, ['talk to someone', 'talk to a person', 'human', 'real person', 'agent', 'customer care', 'speak with', 'speak to', 'chat on whatsapp', 'whatsapp me']))
-    return R(`Of course. Tap below to continue on WhatsApp with our team${s.whatsapp ? ` (${s.whatsapp})` : ''}. I'll include a short note so you don't have to repeat yourself.`, { action: { type: 'whatsapp' } });
+    return R(`Of course. You can chat live with someone from our team right here, or continue on WhatsApp${s.whatsapp ? ` (${s.whatsapp})` : ''}.`, { action: { type: 'handoff' } });
 
   if (has(t, ['pray for', 'prayer request', 'need prayer', 'send a prayer', 'pray with me', 'intercede', 'prayers for']) || /^ ?(pray|prayer)s? ?$/.test(t))
     return R(`We would be honoured to pray with you. Fill in the short form below; Apostle Joshua and the prayer team read every request, and it stays private.`, { action: { type: 'prayer_form' } });
@@ -162,7 +163,7 @@ Rules:
 - Never give medical, legal or financial advice; encourage them to see a professional and offer prayer.
 - If someone may be in danger or wants to harm themselves, tell them to call 112 (Nigeria emergency) immediately and add [[CALL]].
 - Don't claim to be Apostle Joshua or a human. Don't promise miracles, outcomes, or that Apostle Joshua personally will call.
-- To show a form or button, end your reply with ONE tag: [[PRAYER_FORM]] (they want prayer), [[CONTACT:Invite Apostle Joshua]], [[CONTACT:I want to volunteer]], [[CONTACT:Partnership]], [[CONTACT:Planning a visit]], [[CONTACT:General enquiry]], or [[WHATSAPP]] (they want a person).
+- To show a form or button, end your reply with ONE tag: [[PRAYER_FORM]] (they want prayer), [[CONTACT:Invite Apostle Joshua]], [[CONTACT:I want to volunteer]], [[CONTACT:Partnership]], [[CONTACT:Planning a visit]], [[CONTACT:General enquiry]], or [[HANDOFF]] (they want to talk to a person).
 
 Site pages: / (home), /about, /sermons, /live, /events, /gallery, /blog (devotionals), /prayer, /give (partner), /contact.
 Contact: phone ${s.phone || 'n/a'}; WhatsApp ${s.whatsapp || 'n/a'}; email ${s.email || 'n/a'}; base ${s.address || 'Ikorodu, Lagos'}.
@@ -201,10 +202,10 @@ async function askAI(c: Ctx, botName: string, history: { role: string; text: str
     let text: string = (data?.candidates?.[0]?.content?.parts || []).map((p: any) => p.text || '').join('').trim();
     if (!text) return null;
     let action: Action | undefined;
-    const tag = text.match(/\[\[(PRAYER_FORM|WHATSAPP|CALL|CONTACT:([^\]]+))\]\]/);
+    const tag = text.match(/\[\[(PRAYER_FORM|WHATSAPP|HANDOFF|CALL|CONTACT:([^\]]+))\]\]/);
     if (tag) {
       if (tag[1] === 'PRAYER_FORM') action = { type: 'prayer_form' };
-      else if (tag[1] === 'WHATSAPP') action = { type: 'whatsapp' };
+      else if (tag[1] === 'WHATSAPP' || tag[1] === 'HANDOFF') action = { type: 'handoff' };
       else if (tag[1] === 'CALL') action = { type: 'call' };
       else action = { type: 'contact_form', subject: SUBJECTS.includes((tag[2] || '').trim()) ? tag[2].trim() : 'General enquiry' };
     }
@@ -217,6 +218,12 @@ async function askAI(c: Ctx, botName: string, history: { role: string; text: str
 }
 
 /* ---------------- Entry point ---------------- */
+/** Used in live-chat mode: only the safety reply runs, so a person in danger still gets help at once. */
+export async function safetyOnly(message: string): Promise<Reply | null> {
+  const c = await context();
+  return safety(norm(message), c.s);
+}
+
 export async function answer(message: string, history: { role: string; text: string }[]): Promise<Reply> {
   const c = await context();
   const t = norm(message);
@@ -231,8 +238,8 @@ export async function answer(message: string, history: { role: string; text: str
     || faqMatch(t, c)
     || (await askAI(c, botName, history))
     || {
-      source: 'fallback', chips: MAIN_CHIPS, action: { type: 'whatsapp' },
-      text: `I'm not sure I have the answer to that, but our team can help. You can chat with them on WhatsApp${c.s.whatsapp ? ` (${c.s.whatsapp})` : ''}, or pick one of the options below.`,
+      source: 'fallback', chips: MAIN_CHIPS, action: { type: 'handoff' },
+      text: `I'm not sure I have the answer to that, but our team can help. Chat live with someone here, message them on WhatsApp${c.s.whatsapp ? ` (${c.s.whatsapp})` : ''}, or pick one of the options below.`,
     };
 }
 

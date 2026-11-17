@@ -6,7 +6,7 @@ Express + TypeScript + MySQL (TiDB Cloud) backend for the Apostle Joshua Outreac
 - **Admin auth**: JWT login, forgot / reset password by email, change password, owner can add/remove team admins
 - **Content**: sermons & videos (YouTube links), events, gallery photos (Cloudinary), devotionals (blog)
 - **Inbox**: prayer requests and contact messages from the website (rate-limited, spam honeypot), with optional email alerts
-- **Chat assistant**: answers visitors 24/7 from the site's own data and admin-written FAQs, with optional Google Gemini (free tier) for open questions. Takes prayer requests and enquiries inside the chat, hands over to WhatsApp, saves conversations for the admin, and emails alerts for urgent chats and new contacts
+- **Chat assistant**: answers visitors 24/7 from the site's own data and admin-written FAQs, with optional Google Gemini (free tier) for open questions. Visitors can switch to **live chat** with a team member, who replies from the admin dashboard (with a chime and banner when someone is waiting, plus an email alert). Takes prayer requests and enquiries inside the chat, hands over to WhatsApp, saves conversations for the admin, and emails alerts for urgent chats and new contacts
 - **Automations**: email alerts to `NOTIFY_EMAIL`, thank-you emails to visitors, chat-to-inbox linking, 180-day chat cleanup
 - **Site settings**: phone, WhatsApp, email, address, socials, story, giving details, live-stream switch
 - Tables are created automatically on first start; the first admin is created from `ADMIN_EMAIL` + `ADMIN_TEMP_PASSWORD`.

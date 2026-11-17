@@ -50,7 +50,7 @@ r.get('/dashboard', requireAdmin, async (_req, res) => {
     query<any[]>("SELECT SUM(status='new') AS fresh, COUNT(*) AS n FROM prayer_requests"),
     query<any[]>("SELECT SUM(status='new') AS fresh, COUNT(*) AS n FROM messages"),
   ]);
-  const [chats] = await query<any[]>('SELECT SUM(seen = 0) AS unseen, SUM(urgent = 1 AND seen = 0) AS urgent, SUM(last_at >= (NOW() - INTERVAL 7 DAY)) AS week FROM chat_sessions');
+  const [chats] = await query<any[]>("SELECT SUM(seen = 0) AS unseen, SUM(urgent = 1 AND seen = 0) AS urgent, SUM(last_at >= (NOW() - INTERVAL 7 DAY)) AS week, SUM(mode = 'live' AND seen = 0) AS live FROM chat_sessions");
   const settings = await readSettings();
   const missing = ['address', 'meeting_times', 'phone', 'email', 'story'].filter((k) => !settings[k]);
   const recentPrayers = await query('SELECT id, name, request, status, created_at FROM prayer_requests ORDER BY created_at DESC LIMIT 5');
@@ -60,7 +60,7 @@ r.get('/dashboard', requireAdmin, async (_req, res) => {
       sermons: sermons.n, upcomingEvents: events.n, nextEventOn: events.next_on, photos: photos.n,
       postsPublished: Number(posts.published || 0), postsDraft: Number(posts.drafts || 0),
       prayersNew: Number(prayers.fresh || 0), prayersTotal: prayers.n, messagesNew: Number(msgs.fresh || 0), messagesTotal: msgs.n,
-      chatsUnseen: Number(chats.unseen || 0), chatsUrgent: Number(chats.urgent || 0), chatsWeek: Number(chats.week || 0),
+      chatsUnseen: Number(chats.unseen || 0), chatsUrgent: Number(chats.urgent || 0), chatsWeek: Number(chats.week || 0), chatsLive: Number(chats.live || 0),
     },
     missing, recentPrayers, recentSermons,
   });

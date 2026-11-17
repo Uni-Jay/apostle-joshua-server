@@ -136,11 +136,21 @@ const STARTER_FAQS: [string, string, string][] = [
 export async function initDatabase(): Promise<void> {
   for (const sql of TABLES) await query(sql);
   await ensureFirstAdmin();
+  // Live chat columns (added after first release; safe to run every start).
+  await ensureColumn('chat_sessions', 'mode', "VARCHAR(10) NOT NULL DEFAULT 'bot'");
+  await ensureColumn('chat_sessions', 'live_requested_at', 'DATETIME NULL');
+  await ensureColumn('chat_sessions', 'agent_name', 'VARCHAR(120) NULL');
+  await ensureColumn('chat_messages', 'author', 'VARCHAR(120) NULL');
   const [f] = await query<any[]>('SELECT COUNT(*) AS n FROM faqs');
   if (Number(f.n) === 0) for (const [i, [q, a, k]] of STARTER_FAQS.entries()) await query('INSERT INTO faqs (question, answer, keywords, sort_order) VALUES (?,?,?,?)', [q, a, k, i]);
   // Keep the chat log tidy: remove conversations older than 180 days.
   await query('DELETE FROM chat_messages WHERE created_at < (NOW() - INTERVAL 180 DAY)');
   await query('DELETE FROM chat_sessions WHERE last_at < (NOW() - INTERVAL 180 DAY)');
+}
+
+async function ensureColumn(table: string, col: string, def: string) {
+  const rows = await query<any[]>('SELECT COUNT(*) AS n FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?', [table, col]);
+  if (Number(rows[0].n) === 0) await query(`ALTER TABLE ${table} ADD COLUMN ${col} ${def}`);
 }
 
 // On first boot, create the first admin from ADMIN_EMAIL + ADMIN_TEMP_PASSWORD (set in the host's environment).
