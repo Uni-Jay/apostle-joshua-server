@@ -116,6 +116,9 @@ function rules(t: string, c: Ctx): Reply | null {
       ? `Thank you for wanting to support the work! Partnership details are on the [Partner page](/give).`
       : `Thank you for wanting to support the work! Leave your details and the team will share how you can partner with us.`, s.giving ? {} : { action: { type: 'contact_form', subject: 'Partnership' } });
 
+  if (has(t, ['vision', 'mission', 'what do you stand for', 'your goal', 'your purpose']))
+    return R(`**Our vision:** to see lives across the nations transformed by Jesus Christ: people grounded in sound doctrine, strengthened by fervent prayer, and living in a way that reveals Christ wherever they are.\n\n**Our mission:** to reveal Christ to the nations through **Sound Doctrine**, **Fervent Prayer** and **Transformed Lives**. Read more on the [About page](/about).`, { chips: ['Upcoming events', 'Watch a message'] });
+
   if (has(t, ['who is apostle', 'about apostle', 'about you', 'about the outreach', 'who are you', 'what do you do', 'what is apostle joshua', 'tell me about']))
     return R(`Apostle Joshua Outreach is led by **Apostle Joshua A. Ogiriosa** and based in Ikorodu, Lagos. We teach sound apostolic doctrine (the New Testament message) and hold prayer meetings, crusades, seminars and conferences. Read more on the [About page](/about).`, { chips: ['Upcoming events', 'Watch a message'] });
 
@@ -153,7 +156,7 @@ function systemPrompt(c: Ctx, botName: string): string {
   const ser = c.sermons.map((x) => `- ${x.title} (https://www.youtube.com/watch?v=${x.youtube_id})`).join('\n');
   const faq = c.faqs.map((f) => `Q: ${f.question}\nA: ${f.answer}`).join('\n');
   return `You are "${botName}", the friendly assistant on the website of Apostle Joshua Outreach in Ikorodu, Lagos, Nigeria.
-It is led by Apostle Joshua A. Ogiriosa (often called Apostle Joshua). It is an OUTREACH, not a church: it teaches sound apostolic doctrine (the New Testament message) and holds prayer meetings, crusades, seminars and conferences. Its vision includes helping people find jobs and supporting the needy in future, as funds allow.
+It is led by Apostle Joshua A. Ogiriosa (often called Apostle Joshua). It is an OUTREACH, not a church: it teaches sound apostolic doctrine (the New Testament message) and holds prayer meetings, crusades, seminars and conferences. Vision: lives across the nations transformed by Jesus Christ, grounded in sound doctrine, strengthened by fervent prayer, living in a way that reveals Christ. Mission: to reveal Christ to the nations through Sound Doctrine (Acts 2:42), Fervent Prayer (James 5:16) and Transformed Lives (Romans 12:2). Its vision also includes helping people find jobs and supporting the needy in future, as funds allow.
 
 Style: warm, respectful, brief (2-5 short sentences), simple English that Nigerian visitors will find natural. Use **bold** sparingly and markdown links like [Events page](/events). Never use headings.
 
