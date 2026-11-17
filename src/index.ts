@@ -7,7 +7,6 @@ import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import { initDatabase } from './database/init';
 import { UPLOAD_DIR } from './services/media.service';
-import { jwtSecret } from './middleware/auth';
 import authRoutes from './routes/auth.routes';
 import contentRoutes from './routes/content.routes';
 import inboxRoutes from './routes/inbox.routes';
@@ -15,7 +14,6 @@ import siteRoutes from './routes/site.routes';
 import chatRoutes from './routes/chat.routes';
 
 dotenv.config();
-jwtSecret(); // fail fast in production if the secret is missing
 
 const app = express();
 app.set('trust proxy', 1); // Render sits behind a proxy; needed for rate limiting by visitor IP

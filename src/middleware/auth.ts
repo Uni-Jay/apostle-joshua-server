@@ -1,16 +1,22 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 
 export interface AuthUser { id: number; email: string; name: string; role: string }
 export interface AuthRequest extends Request { user?: AuthUser }
 
+let loadedSecret = '';
+/** Called once at start-up (after the tables exist): uses JWT_SECRET if set, otherwise a random secret kept in the database. */
+export async function loadJwtSecret(read: () => Promise<string | null>, write: (v: string) => Promise<void>): Promise<void> {
+  const env = process.env.JWT_SECRET || '';
+  if (env.length >= 32) { loadedSecret = env; return; }
+  let v = await read();
+  if (!v || v.length < 32) { v = crypto.randomBytes(48).toString('hex'); await write(v); }
+  loadedSecret = v;
+}
 export function jwtSecret(): string {
-  const s = process.env.JWT_SECRET;
-  if (!s || s.length < 32) {
-    if (process.env.NODE_ENV === 'production') throw new Error('JWT_SECRET must be set (32+ characters) in production');
-    return 'dev-only-secret-change-me-dev-only-secret';
-  }
-  return s;
+  if (loadedSecret) return loadedSecret;
+  throw new Error('Sign-in is not ready yet: the server is still starting.');
 }
 
 export function signToken(u: AuthUser): string {

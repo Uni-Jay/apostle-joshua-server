@@ -1,5 +1,7 @@
 import bcrypt from 'bcryptjs';
-import { query } from '../config/database';
+import { ensureDatabase, query } from '../config/database';
+import { loadJwtSecret } from '../middleware/auth';
+import { seedContent } from './seedData';
 
 const TABLES = [
   `CREATE TABLE IF NOT EXISTS admins (
@@ -134,8 +136,17 @@ const STARTER_FAQS: [string, string, string][] = [
 ];
 
 export async function initDatabase(): Promise<void> {
+  await ensureDatabase();
   for (const sql of TABLES) await query(sql);
+  await loadJwtSecret(
+    async () => ((await query<any[]>("SELECT svalue FROM settings WHERE skey = '_jwt_secret'"))[0]?.svalue as string) || null,
+    async (v) => { await query("INSERT INTO settings (skey, svalue) VALUES ('_jwt_secret', ?) ON DUPLICATE KEY UPDATE svalue = VALUES(svalue)", [v]); },
+  );
   await ensureFirstAdmin();
+  // A brand-new database gets the outreach's videos, events and contact details straight away.
+  const [sc] = await query<any[]>('SELECT COUNT(*) AS n FROM sermons');
+  const [st] = await query<any[]>("SELECT COUNT(*) AS n FROM settings WHERE skey NOT LIKE '\\_%'");
+  if (Number(sc.n) === 0 && Number(st.n) === 0) console.log(`New database: loaded ${await seedContent()} videos and starter details.`);
   // Live chat columns (added after first release; safe to run every start).
   await ensureColumn('chat_sessions', 'mode', "VARCHAR(10) NOT NULL DEFAULT 'bot'");
   await ensureColumn('chat_sessions', 'live_requested_at', 'DATETIME NULL');

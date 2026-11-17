@@ -20,10 +20,9 @@ npm run build && npm run seed   # optional: load the YouTube videos and starter 
 ```
 
 ## Deploy (Render)
-1. Create a database in TiDB Cloud (e.g. `apostle_joshua`) and note host, user, password.
+1. Use your TiDB Cloud cluster's host, user and password. The server creates the `DB_NAME` database itself on first start and loads the videos, events and contact details.
 2. In Render: **New → Blueprint**, pick this repo. `render.yaml` sets everything up.
 3. Fill in the secret values Render asks for (DB_HOST, DB_USER, DB_PASSWORD, ADMIN_EMAIL, ADMIN_TEMP_PASSWORD, and optionally CLOUDINARY_URL, BREVO_API_KEY and GEMINI_API_KEY).
-4. After the first deploy, open the Render shell and run `npm run seed` once to load the videos.
 5. Sign in at `/admin/login` on the website and change the temporary password.
 
 > Render's disk is wiped on every deploy, so set `CLOUDINARY_URL` before uploading gallery photos.

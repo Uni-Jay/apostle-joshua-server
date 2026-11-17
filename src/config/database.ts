@@ -10,11 +10,23 @@ function dbSsl(): any {
   return undefined;
 }
 
+const DB_NAME = process.env.DB_NAME || 'apostle_joshua_db';
+
+/** Creates the database itself if it doesn't exist yet (e.g. a fresh TiDB Cloud cluster). */
+export async function ensureDatabase(): Promise<void> {
+  if (!/^[A-Za-z0-9_]+$/.test(DB_NAME)) throw new Error('DB_NAME may only contain letters, numbers and underscores');
+  const conn = await mysql.createConnection({
+    host: process.env.DB_HOST || 'localhost', user: process.env.DB_USER || 'root', password: process.env.DB_PASSWORD || '',
+    port: parseInt(process.env.DB_PORT || '3306', 10), ssl: dbSsl(), connectTimeout: 30000,
+  });
+  try { await conn.query(`CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\``); } finally { await conn.end(); }
+}
+
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'apostle_joshua_db',
+  database: DB_NAME,
   port: parseInt(process.env.DB_PORT || '3306', 10),
   ssl: dbSsl(),
   waitForConnections: true,
