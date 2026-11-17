@@ -117,7 +117,7 @@ function rules(t: string, c: Ctx): Reply | null {
       : `Thank you for wanting to support the work! Leave your details and the team will share how you can partner with us.`, s.giving ? {} : { action: { type: 'contact_form', subject: 'Partnership' } });
 
   if (has(t, ['who is apostle', 'about apostle', 'about you', 'about the outreach', 'who are you', 'what do you do', 'what is apostle joshua', 'tell me about']))
-    return R(`Apostle Joshua Outreach is based in Ikorodu, Lagos. We teach sound apostolic doctrine (the New Testament message) and hold prayer meetings, crusades, seminars and conferences. Read more on the [About page](/about).`, { chips: ['Upcoming events', 'Watch a message'] });
+    return R(`Apostle Joshua Outreach is led by **Apostle Joshua A. Ogiriosa** and based in Ikorodu, Lagos. We teach sound apostolic doctrine (the New Testament message) and hold prayer meetings, crusades, seminars and conferences. Read more on the [About page](/about).`, { chips: ['Upcoming events', 'Watch a message'] });
 
   if (has(t, ['devotional', 'blog', 'article', 'read something']))
     return R(`You can read devotionals and teachings on the [Devotionals page](/blog).`);
@@ -153,7 +153,7 @@ function systemPrompt(c: Ctx, botName: string): string {
   const ser = c.sermons.map((x) => `- ${x.title} (https://www.youtube.com/watch?v=${x.youtube_id})`).join('\n');
   const faq = c.faqs.map((f) => `Q: ${f.question}\nA: ${f.answer}`).join('\n');
   return `You are "${botName}", the friendly assistant on the website of Apostle Joshua Outreach in Ikorodu, Lagos, Nigeria.
-It is an OUTREACH, not a church: it teaches sound apostolic doctrine (the New Testament message) and holds prayer meetings, crusades, seminars and conferences. Its vision includes helping people find jobs and supporting the needy in future, as funds allow.
+It is led by Apostle Joshua A. Ogiriosa (often called Apostle Joshua). It is an OUTREACH, not a church: it teaches sound apostolic doctrine (the New Testament message) and holds prayer meetings, crusades, seminars and conferences. Its vision includes helping people find jobs and supporting the needy in future, as funds allow.
 
 Style: warm, respectful, brief (2-5 short sentences), simple English that Nigerian visitors will find natural. Use **bold** sparingly and markdown links like [Events page](/events). Never use headings.
 
