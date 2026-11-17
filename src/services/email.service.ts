@@ -14,7 +14,7 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
     const r = await fetch(BREVO_URL, {
       method: 'POST',
       headers: { 'api-key': key, 'content-type': 'application/json', accept: 'application/json' },
-      body: JSON.stringify({ sender: { email: fromEmail, name: fromName }, to: [{ email: to }], subject, htmlContent: html }),
+      body: JSON.stringify({ sender: { email: fromEmail, name: fromName }, to: to.split(',').map((e) => ({ email: e.trim() })).filter((x) => x.email), subject, htmlContent: html }),
     });
     if (!r.ok) console.error('Brevo error', r.status, await r.text());
     return r.ok;

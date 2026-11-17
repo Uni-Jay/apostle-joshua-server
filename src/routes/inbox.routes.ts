@@ -12,7 +12,7 @@ const submitLimiter = rateLimit({ windowMs: 60 * 60 * 1000, limit: 8, standardHe
 function isBot(b: any) { return !!(b && b.website); }
 
 function notify(subject: string, lines: [string, string | null][]) {
-  const to = process.env.NOTIFY_EMAIL;
+  const to = process.env.NOTIFY_EMAIL || 'apostlejoshuaaogiriosa@gmail.com';
   if (!to) return;
   const body = lines.filter(([, v]) => v).map(([k, v]) => `<p><b>${k}:</b><br>${escapeHtml(String(v)).replace(/\n/g, '<br>')}</p>`).join('');
   sendEmail(to, subject, wrap(subject, body)).catch(() => undefined);

@@ -41,4 +41,4 @@ services:
       - key: EMAIL_FROM
         sync: false
       - key: NOTIFY_EMAIL
-        sync: false
+        value: apostlejoshuaaogiriosa@gmail.com
