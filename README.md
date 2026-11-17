@@ -6,6 +6,8 @@ Express + TypeScript + MySQL (TiDB Cloud) backend for the Apostle Joshua Outreac
 - **Admin auth**: JWT login, forgot / reset password by email, change password, owner can add/remove team admins
 - **Content**: sermons & videos (YouTube links), events, gallery photos (Cloudinary), devotionals (blog)
 - **Inbox**: prayer requests and contact messages from the website (rate-limited, spam honeypot), with optional email alerts
+- **Chat assistant**: answers visitors 24/7 from the site's own data and admin-written FAQs, with optional Google Gemini (free tier) for open questions. Takes prayer requests and enquiries inside the chat, hands over to WhatsApp, saves conversations for the admin, and emails alerts for urgent chats and new contacts
+- **Automations**: email alerts to `NOTIFY_EMAIL`, thank-you emails to visitors, chat-to-inbox linking, 180-day chat cleanup
 - **Site settings**: phone, WhatsApp, email, address, socials, story, giving details, live-stream switch
 - Tables are created automatically on first start; the first admin is created from `ADMIN_EMAIL` + `ADMIN_TEMP_PASSWORD`.
 
@@ -20,7 +22,7 @@ npm run build && npm run seed   # optional: load the YouTube videos and starter 
 ## Deploy (Render)
 1. Create a database in TiDB Cloud (e.g. `apostle_joshua`) and note host, user, password.
 2. In Render: **New → Blueprint**, pick this repo. `render.yaml` sets everything up.
-3. Fill in the secret values Render asks for (DB_HOST, DB_USER, DB_PASSWORD, ADMIN_EMAIL, ADMIN_TEMP_PASSWORD, and optionally CLOUDINARY_URL / BREVO_API_KEY).
+3. Fill in the secret values Render asks for (DB_HOST, DB_USER, DB_PASSWORD, ADMIN_EMAIL, ADMIN_TEMP_PASSWORD, and optionally CLOUDINARY_URL, BREVO_API_KEY and GEMINI_API_KEY).
 4. After the first deploy, open the Render shell and run `npm run seed` once to load the videos.
 5. Sign in at `/admin/login` on the website and change the temporary password.
 

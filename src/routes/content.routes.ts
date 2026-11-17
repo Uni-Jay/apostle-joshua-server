@@ -1,3 +1,4 @@
+import { clearAssistantCache } from '../services/assistant.service';
 import { Router } from 'express';
 import multer from 'multer';
 import { query } from '../config/database';
@@ -6,6 +7,8 @@ import { bad, idParam, isDate, slugify, str, youtubeId, SERMON_TYPES } from '../
 import { saveImage, deleteImage } from '../services/media.service';
 
 const r = Router();
+// Any change to sermons or events refreshes what the chat assistant knows.
+r.use((req, _res, next) => { if (req.method !== 'GET' && /^\/(sermons|events)/.test(req.path)) clearAssistantCache(); next(); });
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024, files: 10 },

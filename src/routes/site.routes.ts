@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { query } from '../config/database';
 import { requireAdmin } from '../middleware/auth';
 import { youtubeId } from '../utils/helpers';
+import { clearAssistantCache } from '../services/assistant.service';
 
 const r = Router();
 
@@ -10,9 +11,10 @@ export const SETTING_KEYS = [
   'address', 'map_url', 'meeting_times', 'phone', 'whatsapp', 'email', 'story', 'giving',
   'youtube_url', 'facebook_url', 'instagram_url',
   'live_is_on', 'live_url', 'live_title',
+  'bot_enabled', 'bot_name', 'bot_greeting',
 ];
 
-async function readSettings(): Promise<Record<string, string>> {
+export async function readSettings(): Promise<Record<string, string>> {
   const rows = await query<any[]>('SELECT skey, svalue FROM settings');
   const out: Record<string, string> = {};
   SETTING_KEYS.forEach((k) => (out[k] = ''));
@@ -22,7 +24,7 @@ async function readSettings(): Promise<Record<string, string>> {
 
 r.get('/settings', async (_req, res) => {
   const s = await readSettings();
-  res.json({ ...s, live_is_on: s.live_is_on === '1', live_video_id: youtubeId(s.live_url) });
+  res.json({ ...s, live_is_on: s.live_is_on === '1', bot_enabled: s.bot_enabled !== '0', live_video_id: youtubeId(s.live_url) });
 });
 
 r.put('/settings', requireAdmin, async (req, res) => {
@@ -30,10 +32,11 @@ r.put('/settings', requireAdmin, async (req, res) => {
   for (const k of SETTING_KEYS) {
     if (!(k in b)) continue;
     let v = b[k];
-    if (k === 'live_is_on') v = v === true || v === '1' || v === 'true' ? '1' : '0';
+    if (k === 'live_is_on' || k === 'bot_enabled') v = v === true || v === '1' || v === 'true' ? '1' : '0';
     v = v === null || v === undefined ? '' : String(v).slice(0, k === 'story' ? 8000 : 2000).trim();
     await query('INSERT INTO settings (skey, svalue) VALUES (?, ?) ON DUPLICATE KEY UPDATE svalue = VALUES(svalue)', [k, v]);
   }
+  clearAssistantCache();
   res.json({ message: 'Settings saved.' });
 });
 
@@ -47,6 +50,7 @@ r.get('/dashboard', requireAdmin, async (_req, res) => {
     query<any[]>("SELECT SUM(status='new') AS fresh, COUNT(*) AS n FROM prayer_requests"),
     query<any[]>("SELECT SUM(status='new') AS fresh, COUNT(*) AS n FROM messages"),
   ]);
+  const [chats] = await query<any[]>('SELECT SUM(seen = 0) AS unseen, SUM(urgent = 1 AND seen = 0) AS urgent, SUM(last_at >= (NOW() - INTERVAL 7 DAY)) AS week FROM chat_sessions');
   const settings = await readSettings();
   const missing = ['address', 'meeting_times', 'phone', 'email', 'story'].filter((k) => !settings[k]);
   const recentPrayers = await query('SELECT id, name, request, status, created_at FROM prayer_requests ORDER BY created_at DESC LIMIT 5');
@@ -56,6 +60,7 @@ r.get('/dashboard', requireAdmin, async (_req, res) => {
       sermons: sermons.n, upcomingEvents: events.n, nextEventOn: events.next_on, photos: photos.n,
       postsPublished: Number(posts.published || 0), postsDraft: Number(posts.drafts || 0),
       prayersNew: Number(prayers.fresh || 0), prayersTotal: prayers.n, messagesNew: Number(msgs.fresh || 0), messagesTotal: msgs.n,
+      chatsUnseen: Number(chats.unseen || 0), chatsUrgent: Number(chats.urgent || 0), chatsWeek: Number(chats.week || 0),
     },
     missing, recentPrayers, recentSermons,
   });

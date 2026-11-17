@@ -26,6 +26,9 @@ const pool = mysql.createPool({
   dateStrings: true,
 });
 
+// Store and compare all timestamps in UTC; the website shows them in the visitor's local time.
+(pool as any).pool.on('connection', (conn: any) => conn.query("SET time_zone = '+00:00'"));
+
 export default pool;
 
 export async function query<T = any>(sql: string, params: any[] = []): Promise<T> {

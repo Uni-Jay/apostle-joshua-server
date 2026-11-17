@@ -92,11 +92,55 @@ const TABLES = [
     skey VARCHAR(60) PRIMARY KEY,
     svalue TEXT NULL
   )`,
+  `CREATE TABLE IF NOT EXISTS chat_sessions (
+    id CHAR(36) PRIMARY KEY,
+    name VARCHAR(120) NULL,
+    phone VARCHAR(40) NULL,
+    email VARCHAR(190) NULL,
+    page VARCHAR(190) NULL,
+    msg_count INT NOT NULL DEFAULT 0,
+    urgent TINYINT(1) NOT NULL DEFAULT 0,
+    seen TINYINT(1) NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX (last_at)
+  )`,
+  `CREATE TABLE IF NOT EXISTS chat_messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    session_id CHAR(36) NOT NULL,
+    role VARCHAR(10) NOT NULL,
+    text TEXT NOT NULL,
+    source VARCHAR(20) NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX (session_id)
+  )`,
+  `CREATE TABLE IF NOT EXISTS faqs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    question VARCHAR(255) NOT NULL,
+    answer TEXT NOT NULL,
+    keywords VARCHAR(500) NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  )`,
+];
+
+// Starter answers for the chat assistant. The admin can edit or delete them under Chat assistant > FAQs.
+const STARTER_FAQS: [string, string, string][] = [
+  ['Is Apostle Joshua Outreach a church?', 'No. Apostle Joshua Outreach is an outreach, not a church. We teach sound apostolic doctrine (the New Testament message) and hold prayer meetings, crusades, seminars and conferences. You are welcome at our programmes whatever church you attend.', 'church,member,denomination,join church,outreach'],
+  ['What does the outreach teach?', 'We teach sound apostolic doctrine: the New Testament message as the apostles preached it. You can watch the teachings on the [Sermons page](/sermons).', 'teach,doctrine,believe,belief,apostolic,new testament,message'],
+  ['Can Apostle Joshua come to minister at our programme?', 'Yes, you can send an invitation. Share your programme details and the team will get back to you.', 'invite,invitation,minister,preach at,programme,program,come to our'],
+  ['Do you help people find jobs or support the needy?', 'Helping people find jobs and supporting the needy is part of our vision for the future, as God provides the funds. For now we can pray with you, and you are welcome to leave your details.', 'job,work,employment,needy,welfare,food,money,financial,help me'],
 ];
 
 export async function initDatabase(): Promise<void> {
   for (const sql of TABLES) await query(sql);
   await ensureFirstAdmin();
+  const [f] = await query<any[]>('SELECT COUNT(*) AS n FROM faqs');
+  if (Number(f.n) === 0) for (const [i, [q, a, k]] of STARTER_FAQS.entries()) await query('INSERT INTO faqs (question, answer, keywords, sort_order) VALUES (?,?,?,?)', [q, a, k, i]);
+  // Keep the chat log tidy: remove conversations older than 180 days.
+  await query('DELETE FROM chat_messages WHERE created_at < (NOW() - INTERVAL 180 DAY)');
+  await query('DELETE FROM chat_sessions WHERE last_at < (NOW() - INTERVAL 180 DAY)');
 }
 
 // On first boot, create the first admin from ADMIN_EMAIL + ADMIN_TEMP_PASSWORD (set in the host's environment).

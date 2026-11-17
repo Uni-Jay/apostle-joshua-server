@@ -12,6 +12,7 @@ import authRoutes from './routes/auth.routes';
 import contentRoutes from './routes/content.routes';
 import inboxRoutes from './routes/inbox.routes';
 import siteRoutes from './routes/site.routes';
+import chatRoutes from './routes/chat.routes';
 
 dotenv.config();
 jwtSecret(); // fail fast in production if the secret is missing
@@ -36,6 +37,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api', contentRoutes);
 app.use('/api', inboxRoutes);
 app.use('/api', siteRoutes);
+app.use('/api', chatRoutes);
 
 app.use((_req, res) => res.status(404).json({ message: 'Not found.' }));
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

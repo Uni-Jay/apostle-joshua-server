@@ -4,6 +4,22 @@ import { query } from '../config/database';
 import { requireAdmin } from '../middleware/auth';
 import { bad, idParam, isEmail, str } from '../utils/helpers';
 import { sendEmail, wrap, escapeHtml } from '../services/email.service';
+import { query as q2 } from '../config/database';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Automation: when a form is sent from inside the chat, attach it to that conversation.
+async function linkChat(sessionId: any, name: string, phone: string | null, email: string | null, note: string) {
+  if (typeof sessionId !== 'string' || !UUID_RE.test(sessionId)) return;
+  await q2('UPDATE chat_sessions SET name = COALESCE(name, ?), phone = COALESCE(phone, ?), email = COALESCE(email, ?), last_at = NOW(), seen = 0 WHERE id = ?', [name, phone, email, sessionId]);
+  await q2('INSERT INTO chat_messages (session_id, role, text, source) SELECT id, ?, ?, ? FROM chat_sessions WHERE id = ?', ['bot', note, 'form', sessionId]);
+}
+
+// Automation: a short thank-you email to visitors who leave an email address.
+function thankVisitor(email: string | null, name: string, subject: string, body: string) {
+  if (!email) return;
+  sendEmail(email, subject, wrap(subject, `<p>Dear ${escapeHtml(name)},</p>${body}<p>God bless you,<br>Apostle Joshua Outreach</p>`)).catch(() => undefined);
+}
 
 const r = Router();
 const submitLimiter = rateLimit({ windowMs: 60 * 60 * 1000, limit: 8, standardHeaders: true, legacyHeaders: false, message: { message: 'You have sent several messages already. Please try again later.' } });
@@ -27,7 +43,9 @@ r.post('/prayer-requests', submitLimiter, async (req, res) => {
   if (!request || request.length < 5) return bad(res, 'Please tell us how we can pray for you.');
   if (email && !isEmail(email)) return bad(res, 'Please check your email address.');
   await query('INSERT INTO prayer_requests (name, phone, email, request, is_private) VALUES (?,?,?,?,?)', [name, phone, email, request, b.is_private === false ? 0 : 1]);
-  notify('New prayer request', [['Name', name], ['Phone', phone], ['Email', email], ['Request', request]]);
+  notify(b.chat_session ? 'New prayer request (from website chat)' : 'New prayer request', [['Name', name], ['Phone', phone], ['Email', email], ['Request', request]]);
+  thankVisitor(email, name, 'We received your prayer request', '<p>Thank you for sharing your prayer request with us. Apostle Joshua and the prayer team have received it and are standing with you in prayer.</p><p>"The effectual fervent prayer of a righteous man availeth much." (James 5:16)</p>');
+  await linkChat(b.chat_session, name, phone, email, `✅ Prayer request received from ${name}:\n${request}`);
   res.status(201).json({ message: 'Thank you. We have received your request and we are praying with you.' });
 });
 r.get('/prayer-requests', requireAdmin, async (req, res) => {
@@ -57,7 +75,9 @@ r.post('/messages', submitLimiter, async (req, res) => {
   if (!email && !phone) return bad(res, 'Please add a phone number or email so we can reply.');
   if (email && !isEmail(email)) return bad(res, 'Please check your email address.');
   await query('INSERT INTO messages (name, phone, email, subject, body) VALUES (?,?,?,?,?)', [name, phone, email, subject, body]);
-  notify(`New message: ${subject}`, [['Name', name], ['Phone', phone], ['Email', email], ['Message', body]]);
+  notify(`New message: ${subject}${b.chat_session ? ' (from website chat)' : ''}`, [['Name', name], ['Phone', phone], ['Email', email], ['Message', body]]);
+  thankVisitor(email, name, 'We received your message', `<p>Thank you for contacting Apostle Joshua Outreach about <b>${escapeHtml(subject)}</b>. Our team has received your message and will get back to you soon.</p>`);
+  await linkChat(b.chat_session, name, phone, email, `✅ Message sent (${subject}) from ${name}:\n${body}`);
   res.status(201).json({ message: 'Thank you. Your message has been sent and we will get back to you soon.' });
 });
 r.get('/messages', requireAdmin, async (_req, res) => { res.json(await query('SELECT * FROM messages ORDER BY created_at DESC LIMIT 500')); });
